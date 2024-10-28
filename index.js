@@ -13,6 +13,7 @@ mongoose.connect(process.env.MONGO_URI, {
 const Schema = mongoose.Schema;
 
 const exerciseSchema = new mongoose.Schema({
+  id: String,
   username: String,
   description: { type: String, required: true },
   duration: { type: Number, required: true },
@@ -46,15 +47,59 @@ app.get("/api/users", (req, res) => {
     });
 });
 
-app.post("/api/users/", (req, res) => {
+app.post("/api/users", (req, res) => {
   username = req.body.username;
   newUser = new userModel({
     username: username,
   });
 
   newUser
-    .save((user) => {
+    .save()
+    .then((user) => {
       res.json({ username: user.username, _id: user._id });
+    })
+    .catch(function (err) {
+      console.error(err);
+      res.json({ error: err });
+    });
+});
+
+app.post("/api/users/:id/exercises", (req, res) => {
+  id = req.params.id;
+  description = req.body.description;
+  duration = req.body.duration;
+  date = req.body.date;
+
+  if (!date) {
+    date = new Date().toDateString();
+  }
+
+  userModel
+    .findById(id)
+    .then((user) => {
+      newExercise = new exerciseModel({
+        id: user.id,
+        username: user.username,
+        description: description,
+        duration: parseInt(duration),
+        date: date,
+      });
+
+      newExercise
+        .save()
+        .then((exercise) => {
+          res.json({
+            username: user.username,
+            description: exercise.description,
+            duration: exercise.duration,
+            date: new Date(exercise.date).toDateString(),
+            _id: user._id,
+          });
+        })
+        .catch(function (err) {
+          console.error(err);
+          res.json({ error: err });
+        });
     })
     .catch(function (err) {
       console.error(err);
