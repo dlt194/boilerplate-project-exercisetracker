@@ -107,6 +107,40 @@ app.post("/api/users/:id/exercises", (req, res) => {
     });
 });
 
+app.get("/api/users/:_id/logs", async function (req, res) {
+  id = req.params._id;
+  from = req.query.from || new Date(0).toDateString();
+  to = req.query.to || new Date(Date.now()).toDateString();
+  limit = Number(req.query.limit) || 0;
+
+  user = await userModel.findById(id).exec();
+
+  //? Find the exercises
+  let exercises = await exerciseModel
+    .find({
+      id: id,
+      date: { $gte: from, $lte: to },
+    })
+    .select("description duration date")
+    .limit(limit)
+    .exec();
+
+  let parsedDatesLog = exercises.map((exercise) => {
+    return {
+      description: exercise.description,
+      duration: exercise.duration,
+      date: new Date(exercise.date).toDateString(),
+    };
+  });
+
+  res.json({
+    _id: user._id,
+    username: user.username,
+    count: parsedDatesLog.length,
+    log: parsedDatesLog,
+  });
+});
+
 const listener = app.listen(process.env.PORT || 3000, () => {
   console.log("Your app is listening on port " + listener.address().port);
 });
